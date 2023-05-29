@@ -1,0 +1,161 @@
+.MODEL small
+.STACK
+.DATA
+NumPow dw 0
+NumBase dw 0
+ToPrint db '$'
+pointer dw 0
+const dw 0 
+msg1 db 13,10,'Enter the number you want to raise to the power:$'
+msg2 db 13,10,'Enter the number of times you want to raise:$'
+msg3 db 13,10,'ERROR,The result is too big and can not be represented$' 
+msg4 db 13,10,'The result is:$' 
+diver dw 0
+.CODE  
+jmp start 
+proc input  
+    pop bx
+    lea dx,msg1
+    mov ah,09h
+    int 21h
+    mov ah,01h
+    int 21h 
+    xor ah,ah 
+    mov NumBase,ax 
+    sub NumBase,30h
+    lea dx,msg2
+    mov ah,09h
+    int 21h
+    mov ah,01h 
+    int 21h 
+    xor ah,ah
+    mov NumPow,ax
+    sub NumPow,30h
+    call validator 
+    mov pointer,0    
+    push bx
+    xor bx,bx
+    xor dx,dx
+    xor ax,ax
+    ret 
+endp    
+proc validator
+    pop pointer
+    cmp NumPow,9
+    je PowOf9
+    cmp NumPow,8
+    je PowOf8
+    cmp NumPow,7
+    je PowOf7
+    cmp NumPow,6
+    je PowOf6 
+    jmp valid
+    PowOf9:
+    cmp NumBase,3
+    ja invalid
+    jmp valid
+    PowOf8:
+    cmp NumBase,4
+    ja invalid
+    jmp valid
+    PowOf7:
+    cmp NumBase,5
+    ja invalid
+    jmp valid
+    PowOf6:
+    cmp NumBase,6
+    ja invalid
+    jmp valid
+    invalid:  
+    lea dx,msg3
+    mov ah,09h  
+    int 21h
+    mov ah,4ch
+    int 21h
+    valid:
+    push pointer
+    ret 
+endp
+
+proc poweraiser  
+    pop bx
+    mov cx,NumPow
+    dec cx
+    mov ax,NumBase
+    mov const,ax
+    xor ax,ax
+              
+    
+    outer_loop: 
+    push const
+    push NumBase 
+    call multi
+    loop outer_loop  
+    push bx
+    ret
+endp
+proc multi 
+    pop pointer
+    pop ax      
+    pop const    
+    mov dx,const
+    dec dx
+    inner_loop: 
+    add NumBase,ax 
+    dec dx 
+    jnz inner_loop
+      
+    push pointer
+    ret 
+endp
+proc printer
+    pop bx 
+    lea dx,msg4
+    mov ah,09h
+    int 21h 
+    push NumBase 
+    call PrintVar
+    push bx
+    ret 
+endp
+proc PrintVar
+pop pointer
+pop ax
+mov diver,10
+xor cx,cx
+
+LoopDiv:
+xor dx,dx         
+div diver             
+push dx            
+inc cx             
+cmp ax,0        
+jnz LoopDiv        
+DigPrinter:
+pop dx           
+add dl,'0'       
+mov ah,02h       
+int 21h           
+loop DigPrinter
+push pointer
+ret
+endp
+    
+
+
+
+
+      
+    
+    
+         
+start:
+mov ax, @data
+mov ds , ax 
+call input
+call poweraiser 
+call printer 
+mov ah,4ch
+int 21h
+
+
