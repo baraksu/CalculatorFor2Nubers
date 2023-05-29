@@ -1,0 +1,82 @@
+.MODEL small
+.STACK
+.DATA
+NumPow dw 0
+NumBase dw 0
+pointer dw 0
+const dw 0 
+msg1 db 13,10,'enter the number tou want to raise to the power:$'
+msg2 db 13,10,'enter the number of times you want to raise:$'
+ 
+.CODE  
+jmp start 
+proc input  
+    pop bx
+    lea dx,msg1
+    mov ah,09h
+    int 21h
+    mov ah,01h
+    int 21h 
+    xor ah,ah 
+    mov NumBase,ax 
+    sub NumBase,30h
+    lea dx,msg2
+    mov ah,09h
+    int 21h
+    mov ah,01h 
+    int 21h 
+    xor ah,ah
+    mov NumPow,ax
+    sub NumPow,30h     
+    push bx
+    xor bx,bx
+    xor dx,dx
+    xor ax,ax
+    ret 
+endp    
+
+    
+
+proc poweraiser  
+    pop bx
+    mov cx,NumPow
+    dec cx
+    mov ax,NumBase
+    mov const,ax
+    xor ax,ax
+              
+    
+    outer_loop: 
+    push const
+    push NumBase 
+    call multi
+    loop outer_loop  
+    push bx
+    ret
+endp
+proc multi 
+    pop pointer
+    pop ax      
+    pop const    
+    mov dx,const
+    dec dx
+    inner_loop: 
+    add NumBase,ax 
+    dec dx 
+    jnz inner_loop
+      
+    push pointer
+    ret 
+endp  
+
+
+
+      
+    
+    
+         
+start:
+mov ax, @data
+mov ds , ax 
+call input
+call poweraiser
