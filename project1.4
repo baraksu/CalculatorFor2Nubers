@@ -1,0 +1,275 @@
+.MODEL small
+.STACK 100h
+.DATA
+NumPow dw 0 ;the var is used to determine the number of times to be raised
+NumBase dw 0 ;the var is used to determine the base number to be raised also includes the result at the end
+ToPrint db '$'; the var is used to print the result of multiplication
+pointer dw 0 ; the var is used to store the address to return to after procs when bx is already taken
+msg1 dw 13,10,'Enter the number you want to raise to the power:$';the message tells the user to enter a number to be raised
+msg2 dw 13,10,'Enter the number of times you want to raise:$';the message tells the user to enter the number of times he wants to raise the number he entered before
+msg3 dw 13,10,'ERROR,input invalid$';the message tells the user he entered invalid input 
+msg4 dw 13,10,'The result is:$';the message is used to tell the user the result of the multiplication 
+diver dw 0; the var is used to cut number to his digits so it can be printed  
+const dw 0; used te store the number needed to multiplied by NumBase
+.CODE  
+jmp main
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ 
+;proc number 1
+;the proc's goal is to get input from the user and then to call another proc to validate the input entered 
+;the proc needs msg1,msg2,msg3 and msg4 as parameters and returns back to main the vars NumBase abd NumPow 
+
+proc input 
+     
+    pop bx
+    pop msg1
+    pop msg2 
+    pop msg3 
+    pop msg4
+    
+    lea dx,msg1
+    mov ah,09h
+    int 21h
+    mov ah,01h
+    int 21h
+     
+    xor ah,ah 
+    mov NumBase,ax 
+    sub NumBase,30h
+    
+    lea dx,msg2
+    mov ah,09h
+    int 21h
+    mov ah,01h 
+    int 21h 
+    
+    xor ah,ah
+    mov NumPow,ax
+    sub NumPow,30h
+    
+    push msg4
+    push msg3
+    push NumBase
+    push NumPow
+    call validator
+    pop NumPow
+    pop NumBase 
+    
+    mov pointer,0    
+    push bx
+    xor bx,bx
+    xor dx,dx
+    xor ax,ax
+    ret 
+endp
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ 
+;proc number 2
+;the proc's goal to determine if the input the user entered is valid or not    
+;if its not it ends the program if it is valid it goes back to the input proc
+;the proc needs NumPow and NumBase as parameters and returning them  to proc input without changing them if they are valid
+proc validator 
+    
+    pop pointer
+    pop NumPow
+    pop NumBase
+    pop msg3 
+    pop msg4
+    
+    cmp NumPow,9
+    ja invalid
+    
+    cmp NumBase,9
+    ja invalid
+    
+    cmp NumPow,9
+    je PowOf9 
+    
+    cmp NumPow,8
+    je PowOf8 
+    
+    cmp NumPow,7
+    je PowOf7
+    
+    cmp NumPow,6
+    je PowOf6 
+    
+    cmp NumPow,0
+    je  ToThePowOfZero
+    
+    cmp NumBase,0
+    je  ZeroToThePow
+    
+    jmp valid
+    
+    PowOf9:
+    
+    cmp NumBase,3
+    ja invalid
+    jmp valid
+    
+    PowOf8:
+    
+    cmp NumBase,4
+    ja invalid
+    jmp valid 
+    
+    PowOf7: 
+    
+    cmp NumBase,5
+    ja invalid
+    jmp valid 
+    
+    PowOf6: 
+    
+    cmp NumBase,6
+    ja invalid
+    jmp valid
+      
+    ZeroToThePow: 
+    
+    push NumBase 
+    push msg4
+    call PrintVar
+        
+    jmp END
+    
+    ToThePowOfZero:
+    
+    mov NumBase,1
+    
+    push NumBase
+    push msg4
+    call PrintVar
+    
+    jmp END
+    
+    invalid: 
+     
+    lea dx,msg3
+    mov ah,09h  
+    int 21h
+     
+    jmp END
+   
+    valid:
+     
+    push NumBase
+    push NumPow
+    push pointer
+    ret 
+endp
+;--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+;proc number 3
+;the proc's goal is to set the number of the time to use the multi proc and also gives the proc the number to multiply
+;the proc needs NumPow and NumBase as parameters ant returns nothing to main
+proc poweraiser
+      
+    pop bx 
+    pop NumPow
+    pop NumBase
+    
+    mov cx,NumPow
+    dec cx   
+    
+    mov ax,NumBase
+    mov const,ax
+    xor ax,ax
+    
+    TimesToMuloop:
+     
+    push const
+    push NumBase 
+    call multi
+    loop TimesToMuloop 
+     
+    push bx
+    ret
+endp
+;----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- 
+;proc number 4
+;the proc's goal is to multiply the NumBase and const in each other 
+;the proc needs const,and NumBase as parameters and returns to menu the var NumBase
+proc multi 
+    
+    pop pointer
+    pop ax  
+    pop dx    
+    dec dx 
+    
+    Muloop:  
+    
+    add NumBase,ax 
+    dec dx 
+    jnz Muloop 
+    
+    push NumBase  
+    push pointer
+    ret 
+endp
+;----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- 
+
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+;proc number 5
+;the proc's goal is to print the result stored in NumBase
+;the proc needs NumBase and msg4  as parameters and returns nothing 
+proc PrintVar
+    
+pop bx
+pop msg4
+
+lea dx,msg4
+mov ah,09h
+int 21h
+
+pop ax  
+
+mov diver,10
+xor cx,cx
+
+LoopDiv:
+
+xor dx,dx
+         
+div diver             
+push dx 
+           
+inc cx             
+cmp ax,0        
+jnz LoopDiv
+        
+DigPrinter: 
+
+pop dx 
+          
+add dl,'0'       
+mov ah,02h       
+int 21h  
+         
+loop DigPrinter
+push pointer
+ret
+endp
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------         
+main:
+mov ax, @data
+mov ds , ax
+push msg4 
+push msg3
+push msg2
+push msg1
+call input
+pop NumPow 
+pop NumBase
+
+
+push NumBase
+push NumPow
+call poweraiser 
+pop NumBase
+
+push NumBase
+push msg4 
+call PrintVar
+END: 
+mov ah,4ch
+int 21h 
+;-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
